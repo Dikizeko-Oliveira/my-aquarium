@@ -12,11 +12,16 @@ export const schema = Yup.object().shape({
   email: Yup.string()
   .email('Email ínvalido')
   .required('Campo obrigatório'),
-  cellphone_number: Yup.string(),
-  password: Yup.string().required('Campo obrigatório'),
-  password_confirmation: Yup.string()
-  .required('Campo obrigatório')
-  .oneOf([Yup.ref("password")], 'As senhas são difirentes')
+  cpf: Yup.string(),
+  password: Yup.string().required('Campo obrigatório')
+});
+
+export const schemaUpdate = Yup.object().shape({
+  name: Yup.string().required('Campo obrigatório'),
+  email: Yup.string()
+  .email('Email ínvalido')
+  .required('Campo obrigatório'),
+  cellphone: Yup.string().notRequired(),
 });
 
 function getValidationSchema(values: any) {

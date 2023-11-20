@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
+import { ActivityIndicator } from "react-native";
 import { useTheme } from "styled-components";
 import { getStatusBarHeight } from "react-native-iphone-x-helper";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Formik } from "formik";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore"; 
 
+import { firestore } from '../../../firebase'
 import { Input } from "@components/Input";
 import { schemaPets } from "../../utils/formValidations/myPets";
 
@@ -32,12 +35,29 @@ export function MyPets() {
   const navigation = useNavigation();
   const { COLORS } = useTheme();
 
-  const [pets, setPets] = useState<PetsProps[]>([{name: "Naruto"}]);
+  const [pets, setPets] = useState<PetsProps[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  
 
   const handleGoBack = () => {
     navigation.goBack();
   };
 
+  async function handleGetData (){
+    setLoading(true)
+    const querySnapshot = await getDocs(collection(firestore, "pets"));
+    const myPets: PetsProps[] = []
+    querySnapshot.forEach((doc) => {
+      myPets.push(doc.data() as PetsProps)
+    });
+    setPets(myPets);
+    // setLoading(false)
+  }
+   
+  useFocusEffect(useCallback(() => {
+    handleGetData()
+  },[]))
+  
   return (
     <Container paddingTop={getStatusBarHeight() + 40}>
       <BackButton onPress={() => handleGoBack()} activeOpacity={0.7}>
@@ -83,6 +103,11 @@ export function MyPets() {
           </Formik>
         </ProfileContainer>
         
+        <ActivityIndicator 
+          animating={loading}
+          color={COLORS.BUTTON}
+          size='large'
+      />
         <Pets>
           <Title>Meus pets</Title>
           

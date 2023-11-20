@@ -2,8 +2,7 @@ import { verify, TokenExpiredError } from "jsonwebtoken";
 import authConfig from "./secret";
 
 const isAuthenticated = () => {
-  const token = ''
-  // const token = localStorage.getItem("@Guita:token");
+  const token = localStorage.getItem("@TccAquarium:token");
 
   if(!token) {
    return false;

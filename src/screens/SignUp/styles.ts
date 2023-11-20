@@ -9,6 +9,7 @@ export const Container = styled<any>(LinearGradient).attrs<Props>(({ theme }) =>
   colors: theme.COLORS.GRADIENT,
 }))`
   flex: 1;
+  height: 100%;
   position: relative;
   align-items: center;
   

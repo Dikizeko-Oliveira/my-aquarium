@@ -2,8 +2,9 @@ import React from "react";
 import Spinner from "react-native-loading-spinner-overlay";
 
 import { Container, Loader } from "./styles";
+import { useTheme } from "styled-components";
 
-type LoadingType = "gerando" | "alterando" | "guardando" | "carregando";
+type LoadingType = "Gerando" | "Alterando" | "Guardando" | "Carregando";
 
 interface LoadingProps {
   type: LoadingType;
@@ -11,16 +12,18 @@ interface LoadingProps {
 }
 
 export function Loading({
-  type = "carregando",
+  type = "Carregando",
   isActive = true,
 }: LoadingProps) {
+  const { COLORS } = useTheme();
   return (
     <Container>
       <Loader>
         <Spinner
           visible={isActive}
-          textContent={`Estamos ${String(type)} seus dados, Aguarde!...`}
-          textStyle={{ color: "#FFF", textAlign: "center" }}
+          textContent={`${String(type)}...`}
+          textStyle={{ color: COLORS.BUTTON, textAlign: "center" }}
+          color={COLORS.BUTTON}
         />
       </Loader>
     </Container>

@@ -1,8 +1,7 @@
 import {initializeApp} from 'firebase/app'
 import {getDatabase, ref, onValue,} from 'firebase/database'
-import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth'
+import { getAuth } from 'firebase/auth'
 import {getFirestore} from 'firebase/firestore';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import 'firebase/database'
 
 
@@ -14,7 +13,6 @@ const firebaseConfig = {
   storageBucket: "tcc-my-aquarium.appspot.com",
   messagingSenderId: "618496519257",
   appId: "1:618496519257:web:e5df84327fbe18e5f75548",
-  automaticDataCollectionEnabled: true,
 };
 
 // Initialize Firebase

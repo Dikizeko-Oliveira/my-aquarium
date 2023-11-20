@@ -1,16 +1,17 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "styled-components";
 import { getStatusBarHeight } from "react-native-iphone-x-helper";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Formik } from "formik";
 
+import { GetProfileService, UpdateAccountService, UpdateUserProps } from "../../services/users";
 import { useCurrentLocationContext } from "../../contexts/CurrentLocation";
 import { useGetInitialsName } from "../../utils/formatNames";
 import { useAuth } from "../../services/auth/auth";
 import { Input } from "../../components/Input";
-import { schema } from "../../utils/formValidations/signupValidation";
+import { schema, schemaUpdate } from "../../utils/formValidations/signupValidation";
 import { ButtonIcon } from "../../components/ButtonIcon";
 
 import {
@@ -30,9 +31,10 @@ import {
 export function ProfileAccount() {
   const navigation = useNavigation();
   const { COLORS } = useTheme();
-  const { user, signOut } = useAuth();
+  const { name, signOut } = useAuth();
   const { letterName } = useGetInitialsName();
   const { currentLocation } = useCurrentLocationContext();
+  const [user, setUser] = useState<UpdateUserProps>({} as UpdateUserProps);
 
   const handleNavigateAndLogout = (screen: string) => {
     if (screen === "logout") {
@@ -58,6 +60,21 @@ export function ProfileAccount() {
   const handleGoBack = () => {
     navigation.goBack();
   };
+  
+  async function handleGetUser() {
+    const user = await GetProfileService()
+    console.log('user', user.user);
+   
+    setUser(user.user)
+  }
+  
+  async function handleUpdateUser(user:UpdateUserProps) {
+    await UpdateAccountService(user)
+  }
+  
+  useFocusEffect(useCallback(() => {
+    handleGetUser()
+  },[]))
 
   return (
     <Container paddingTop={getStatusBarHeight() + 40}>
@@ -73,34 +90,31 @@ export function ProfileAccount() {
               size={30}
               color={COLORS.WHITE_900}
             />
-            <Text>Carregar foto</Text>
+            <Text>Carregar foto {user?.name}</Text>
           </UploadButton>
-          {user?.avatar_url ? (
-            <Profile>
-              <ImageProfile source={{ uri: user.avatar_url }} />
-            </Profile>
-          ) : (
-            <Profile>
-              <Title>{letterName(user?.name)}</Title>
-            </Profile>
-          )}
+       
+          <Profile>
+            <Title>{letterName(name)}</Title>
+          </Profile>
         </ProfileContainer>
 
         <Formik
           initialValues={{
-            name: "",
-            email: "",
-            cellphone_number: "",
+            name: user?.name,
+            email: user?.email,
+            cellphone: user?.cellphone,
             password: "",
             password_confirmation: "",
           }}
           onSubmit={(values, { resetForm, setFieldError }) => {
+            handleUpdateUser(values)
             // resetForm({});
           }}
           // validate={validateForm}
-          validationSchema={schema}
+          validationSchema={schemaUpdate}
+          enableReinitialize
         >
-          {({ handleSubmit, handleChange, errors, values, touched }) => (
+          {({ handleSubmit, handleChange, errors, values, touched, initialValues }) => (
             <FormContent>
               <Input
                 placeholder="Digite aqui o seu nome"
@@ -153,11 +167,11 @@ export function ProfileAccount() {
                 autoCapitalize="none"
                 returnKeyType="next"
                 isRequired
-                onChangeText={handleChange("cellphone_number")}
-                value={values.cellphone_number}
+                onChangeText={handleChange("cellphone")}
+                value={values.cellphone}
               />
-              {errors.cellphone_number && touched.cellphone_number && (
-                <TextError>{errors.cellphone_number}</TextError>
+              {errors.cellphone && touched.cellphone && (
+                <TextError>{errors.cellphone}</TextError>
               )}
               <Input
                 placeholder="Digite sua senha"
@@ -169,7 +183,6 @@ export function ProfileAccount() {
                 }
                 label="Sua senha"
                 returnKeyType="next"
-                isRequired
                 value={values.password}
                 onChangeText={handleChange("password")}
               />
@@ -185,7 +198,6 @@ export function ProfileAccount() {
                     : COLORS.PRIMARY_900
                 }
                 label="Confirmar senha"
-                isRequired
                 onChangeText={handleChange("password_confirmation")}
                 value={values.password_confirmation}
               />

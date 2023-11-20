@@ -1,15 +1,19 @@
-import React, { useState, useCallback } from "react";
-import { View, TouchableOpacity } from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import React, { useState, useCallback, useEffect } from "react";
+import { View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { format, fromUnixTime } from "date-fns";
 import { useTheme } from "styled-components";
 import { getStatusBarHeight } from "react-native-iphone-x-helper";
-import { collection, getDocs } from "firebase/firestore"; 
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore"; 
 import { optionsMenu } from "../../utils/mockMenuOptions";
 import { useGetInitialsName } from "../../utils/formatNames";
 import { shadow } from "../../utils/shadowContent";
 import { useAuth } from "../../services/auth/auth";
-import { db, firestore } from '../../../firebase'
+import { firestore } from '../../../firebase'
+import { Loading } from "@components/Loading";
+import { AsyncStorageGetItem } from "../../utils/asyncStorage";
+import { UpdateUserProps } from "../../services/users";
 
 import {
   Container,
@@ -39,35 +43,89 @@ interface AquariumProps {
   reservatorio: Reservation;
   temperatura: number;
   turbidez: number;
-  updatedAt: string;
-  
+  updatedAt: {seconds: number, nanoseconds: number};
 }
 
 interface RoutineProps {
   value: number;
   isValid: boolean;
-  
+}
+
+interface ActionsProps {
+  light: string;
+  feeder: string;
 }
 export function Home() {
   const navigation = useNavigation();
   const { COLORS } = useTheme();
-  const { user } = useAuth();
   const { initialName, letterName } = useGetInitialsName();
+  
   
   const [lightOn, setLightOn] = useState(false);
   const [feederOn, setFeederOn] = useState(false);
   const [aquarium, setaquarium] = useState<AquariumProps>({} as AquariumProps)
-  const [routines, setRoutines] = useState<RoutineProps>({} as RoutineProps)
+  const [loading, setLoading] = useState<boolean>(false);
+  const [userName, setUserName] = useState<string>('');
   
-   async function handleGetData (){
+  const [routines, setRoutines] = useState<RoutineProps>({} as RoutineProps);
+  
+  async function handleGetData (){
     const querySnapshot = await getDocs(collection(firestore, "aquarium"));
     querySnapshot.forEach((doc) => {
       setaquarium(doc.data() as AquariumProps);
     });
-   }
+    const querySnapshotActions = await getDocs(collection(firestore, "actions"));
+    querySnapshotActions.forEach((doc) => {
+      const acts = doc.data() as ActionsProps
+      setFeederOn(acts.feeder === 'on' ? true : false)
+      setLightOn(acts.light === 'on' ? true : false)
+    });
+  }
+   
+  const handleGetSavedUserData = async () => {
+    const result = await AsyncStorageGetItem('@TccAquarium:user')
+    console.log(result)
+    if(result) {
+      const parsedUserData = JSON.parse(result);
+      setUserName(parsedUserData);
+    }
+  };
+  
   useFocusEffect(useCallback(() => {
+    handleGetSavedUserData()
+  },[]))
+  
+  useEffect(useCallback(() => {
     handleGetData()
-  },[collection(firestore, "aquarium")]))
+  },[firestore]))
+  
+  async function handleTurnOnTheLights() {
+    try {
+      setLoading(true)
+      const lightRef = doc(collection(firestore, "actions"), "4Eau9nRbMibTuSM6IDof");
+    
+      await updateDoc(lightRef, {
+        light: lightOn ? 'off' : 'on'
+      });
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
+    }
+  }
+  
+  async function handleTurnOnTheFeeder() {
+    try {
+      setLoading(true)
+      const feederRef = doc(collection(firestore, "actions"), "4Eau9nRbMibTuSM6IDof");
+    
+      await updateDoc(feederRef, {
+        feeder: feederOn ? 'off' : 'on'
+      });
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
+    }
+  }
    
   return (
     <Container paddingTop={getStatusBarHeight() + 40}>
@@ -78,19 +136,11 @@ export function Home() {
             <Text>Hoje é dia de trocar a água</Text>
            
           </View>
-          {user?.avatar_url ? (
             <TouchableOpacity onPress={() => navigation.navigate("profile")} activeOpacity={0.7}>
               <Profile>
-                <ImageProfile source={{ uri: user.avatar_url }} />
+                <Title>{letterName(userName)}</Title>
               </Profile>
             </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={() => navigation.navigate("profile")} activeOpacity={0.7}>
-              <Profile>
-                <Title>{letterName('Tcc Project')}</Title>
-              </Profile>
-            </TouchableOpacity>
-          )}
         </ProfileContainer>
 
         <BalanceContent style={shadow}>
@@ -101,10 +151,20 @@ export function Home() {
             <Text style={{ fontSize: 16 }}>Temperatura da água: {aquarium.temperatura}º</Text>
             <Text style={{ fontSize: 16 }}>Nível do reservatório: {aquarium.reservatorio}</Text>
             <Text style={{ fontSize: 16 }}>Presença de fogo ou fumaça: {aquarium.fire}</Text>
-            <Text style={{ fontSize: 16 }}>Atualizado em: 12/10/2023 14h:00</Text>
+            {/* <Text style={{ fontSize: 16 }}>Atualizado em: {format(fromUnixTime(aquarium?.updatedAt?.seconds), 'dd/MM/yyyy HH:mm')}</Text> */}
           </Balance>
         </BalanceContent>
   
+        {/* <Loading 
+        isActive={loading}
+        type='Carregando'
+        /> */}
+        <ActivityIndicator 
+          animating={loading}
+          color={COLORS.BUTTON}
+          size='large'
+      />
+        
         <MenuContainer>
           <MenuContent horizontal={true} showsHorizontalScrollIndicator={false}>
             {optionsMenu.map((option) => (
@@ -139,7 +199,7 @@ export function Home() {
         </SemiTitle>
   
         <ActionsContainer>
-          <ActionButton activeOpacity={0.7} isOn={lightOn} onPress={() => setLightOn(!lightOn)}>
+          <ActionButton activeOpacity={0.7} isOn={lightOn} onPress={() => handleTurnOnTheLights()}>
             <MaterialCommunityIcons
               name={lightOn ? 'lightbulb-on' :'lightbulb-off'}
               size={20}
@@ -147,7 +207,7 @@ export function Home() {
             />
             <Text style={{ fontSize: 14, marginLeft: 5 }}>Acender lâmpada</Text>
           </ActionButton>
-          <ActionButton activeOpacity={0.7} isOn={feederOn} onPress={() => setFeederOn(!feederOn)}>
+          <ActionButton activeOpacity={0.7} isOn={feederOn} onPress={() => handleTurnOnTheFeeder()}>
             <MaterialCommunityIcons
               name={feederOn ? 'food-steak' :'food-steak-off'}
               size={20}

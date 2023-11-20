@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { Alert, Image } from "react-native";
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../../firebase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "styled-components/native";
 import { getStatusBarHeight } from "react-native-iphone-x-helper";
-import Spinner from "react-native-loading-spinner-overlay";
+import { Formik } from "formik";
+
+import { schemaLogin } from "../../utils/formValidations/signupValidation";
+import { Loading } from "@components/Loading";
+import { useAuth } from "../../services/auth/auth"
 
 import { ButtonIcon } from "@components/ButtonIcon";
 import { Input } from "@components/Input";
@@ -23,19 +24,35 @@ import {
   Text,
   TextError,
 } from "./styles";
-import { AsyncStorageSaveItem } from "../../utils/asyncStorage";
-import { Formik } from "formik";
-import { schemaLogin } from "../../utils/formValidations/signupValidation";
 
 export function SignIn() {
   const { COLORS } = useTheme();
   const navigation = useNavigation();
+  const { signIn } = useAuth();
 
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleGoBack = () => {
     navigation.goBack();
   };
+  
+  const handleSignIn = (email:string, password: string) => {
+    try {
+      setLoading(true);
+      signIn({
+        email,
+        password
+      })
+      setLoading(false);
+      navigation.navigate('home');
+    } catch (error:any) {
+      setLoading(false);
+      const errorMessage = error.message;
+      const errorCode = error.code;
+      Alert.alert('Ocorreu um erro ao realizar essa operação, tente novamente.')
+      console.log(errorMessage);
+    }
+  }
 
   return (
     <Container paddingTop={getStatusBarHeight() + 40}>
@@ -52,37 +69,22 @@ export function SignIn() {
         <Image source={Banner} />
       </ImageContainer>
 
-      <Spinner
-        visible={loading}
-        textContent={'Loading...'}
-        color={COLORS.WHITE_900}
-        textStyle={{color: COLORS.BUTTON}}
+      <Loading 
+        isActive={loading}
+        type='Carregando'
       />
+      
       <Content>
         <Title>Credenciais de acesso</Title>
 
         <Formik
           initialValues={{
-            email: "tcc@unip.br",
+            email: "dikezeko@gmail.com",
             password: "123456",
           }}
-          onSubmit={(values, { resetForm, setFieldError }) => {
+          onSubmit={(values, { resetForm }) => {
             setLoading(true);
-
-            signInWithEmailAndPassword(auth, values.email, values.password)
-              .then((userCredential) => {
-                const user = userCredential.user;
-                console.log(user);
-                setLoading(false);
-                navigation.navigate('home');
-              })
-              .catch((error) => {
-                setLoading(false);
-                const errorMessage = error.message;
-                const errorCode = error.code;
-                Alert.alert('Ocorreu um erro ao realizar essa operação, tente novamente.')
-                console.log(errorMessage);
-              });
+            handleSignIn(values.email, values.password)
             resetForm({});
           }}
           validationSchema={schemaLogin}

@@ -7,15 +7,9 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-interface User {
-  id: string;
-  name: string;
-  avatar_url: string;
-}
-
 interface AuthState {
   token: string;
-  user: User;
+  name: string;
 }
 
 interface SignInCredentials {
@@ -24,30 +18,30 @@ interface SignInCredentials {
 }
 
 interface AuthContextData {
-  user: User;
+  name: string;
   signIn(credentials: SignInCredentials): Promise<void>;
   signOut(): void;
-  updateUser(user: User): void;
+  updateUser(name: string): void;
 }
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [data, setData] = useState<AuthState>(() => {
     
-    let user;
+    let name;
     let token;
     
     const GetDatas = async () =>{
-      user = await AsyncStorageGetItem("@Guita:user");
-      token = await AsyncStorageGetItem("@Guita:token");
+      name = await AsyncStorageGetItem("@TccAquarium:user");
+      token = await AsyncStorageGetItem("@TccAquarium:token");
     }
     
     GetDatas();
     
-    if (token && user) {
+    if (token && name) {
       api.defaults.headers.authorization = `Bearer ${token}`;
 
-      return { token, user: JSON.parse(user) };
+      return { token, name: JSON.parse(name) };
     }
 
     return {} as AuthState;
@@ -64,24 +58,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       password,
     });
 
-    const { token, user } = response.data;
-
-    await AsyncStorageSaveItem("@Guita:user", JSON.stringify(user));
-    await AsyncStorageSaveItem("@Guita:token", token);
+    const { token, name } = response.data;
+    await AsyncStorageSaveItem("@TccAquarium:user", JSON.stringify(name));
+    await AsyncStorageSaveItem("@TccAquarium:token", token);
 
     api.defaults.headers.authorization = `Bearer ${token}`;
 
-    setData({ token, user });
+    setData({ token, name });
     
   };
 
   const updateUser = useCallback(
-    async (user: User) => {
-      await AsyncStorageSaveItem("@Guita:user", JSON.stringify(user));
+    async (name: string) => {
+      await AsyncStorageSaveItem("@TccAquarium:user", JSON.stringify(name));
 
       setData({
         token: data.token,
-        user,
+         name,
       });
     },
     [setData, data.token]
@@ -89,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user: data.user, signIn, signOut, updateUser }}
+      value={{ name: data.name, signIn, signOut, updateUser }}
     >
       {children}
     </AuthContext.Provider>

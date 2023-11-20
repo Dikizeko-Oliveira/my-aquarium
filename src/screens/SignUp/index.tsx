@@ -3,15 +3,16 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "styled-components/native";
 import { Formik } from 'formik';
-import { ActivityIndicator, Alert, Image } from "react-native";
+import { Alert, Image } from "react-native";
 import FlashMessage, { showMessage } from 'react-native-flash-message';
 import { getStatusBarHeight } from "react-native-iphone-x-helper";
 
 import { ButtonIcon } from "@components/ButtonIcon";
 import { Input } from "@components/Input";
-import {schema, validateForm} from '../../utils/formValidations/signupValidation';
-import { CreateAccountService, CreateUserProps } from "../../services/GetUserToAuthenticate";
+import { Loading } from "@components/Loading";
 
+import { schema } from '../../utils/formValidations/signupValidation';
+import { CreateAccountService, CreateUserProps } from "../../services/users";
 import Banner from "../../assets/banner1.png";
 
 import {
@@ -19,10 +20,7 @@ import {
   ImageContainer,
   Title,
   Content,
-  Text,
   TextError,
-  SignUpButton,
-  ButtonContainer,
   BackButton,
   ContentContainer,
 } from "./styles";
@@ -31,49 +29,38 @@ export function SignUp() {
   const navigation = useNavigation();
   const { COLORS } = useTheme();
   
-  const [next, setNext] = useState(1);
   const [loading, setLoading] = useState<boolean>(false);
-  const [cellphoneNumber, setCellPhoneNumber] = useState('');
-  const [formValues, setFormValues] = useState<CreateUserProps>({} as CreateUserProps)
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   
   const handleSignUp = async (data: CreateUserProps): Promise<void> => {
     setLoading(true)
     try {
-      await CreateAccountService(data);
+      await CreateAccountService({
+        name: data.name,
+        email: data.email,
+        cpf: data.cpf,
+        password: data.password
+      });
       setLoading(false);
       showMessage({
         message: 'Seu cadastro realizado com sucesso!',
         type: 'success'
       });
-      navigation.navigate('confirmAccount', { 
-        cellphone_number: cellphoneNumber
-      })
+      navigation.navigate('signin')
     } catch (error: any) {
       setLoading(false);
       console.log(error);
       const err = JSON.parse(error.response.request._response);
       if(err.message && err.code !== 500){
-        Alert.alert('Atenção',`${err.message}`);
-      } else {
-        Alert.alert('Atenção','An error occurred while signing up, try again');
-      }
+        // Alert.alert('Atenção',`${err.message}`);
+        showMessage({
+          message: `Atenção ${err.message}`,
+          type: 'danger'
+        });
+      } 
+      
+      Alert.alert('Ocorreu um erro ao realizar essa operação, tente novamente');
     }
   }
-  
-  const showDatePicker = () => {
-    setDatePickerVisibility(true);
-  };
-
-  const hideDatePicker = () => {
-    setDatePickerVisibility(false);
-  };
-
-  const handleConfirm = (date: Date) => {
-    setSelectedDate(date);
-    hideDatePicker();
-  };
   
   const handleGoBack = () => {
     navigation.goBack();
@@ -88,11 +75,10 @@ export function SignUp() {
       <ImageContainer>
         <Image source={Banner} />
       </ImageContainer>
-        {/* <ActivityIndicator 
-        animating={loading}
-        color={COLORS.WHITE_900}
-        size='large'
-      /> */}
+      <Loading 
+        isActive={loading}
+        type='Carregando'
+      />
       <ContentContainer>
         <Title>
           Faça seu cadastro na{"\n"} plataforma
@@ -102,14 +88,14 @@ export function SignUp() {
           initialValues={{
             name: '',
             email: '',
+            cpf: '',
             password: '',
             password_confirmation: '',
           }}
-          onSubmit={(values, { resetForm , setFieldError}) => {
-          
+          onSubmit={(values, { resetForm }) => {
+            handleSignUp(values)
             // resetForm({});
           }}
-          // validate={validateForm} 
           validationSchema={schema}
           >
            {({ handleSubmit, handleChange, errors, values, touched }) => ( 
@@ -147,11 +133,28 @@ export function SignUp() {
                 </TextError>
               )}
               <Input
+                placeholder="Digite aqui o seu cpf"
+                type="secondary"
+                borderColor={errors.cpf && touched.cpf ? COLORS.ERROR : COLORS.PRIMARY_900}
+                label="CPF"
+                secureTextEntry={false}
+                autoCapitalize="none"
+                returnKeyType="next"
+                isRequired
+                onChangeText={handleChange('cpf')}
+                value={values.cpf} />
+              {errors.cpf && touched.cpf && (
+                <TextError>
+                  {errors.cpf}
+                </TextError>
+              )}
+              <Input
                 placeholder="Digite sua senha"
                 type="secondary"
                 borderColor={errors.password && touched.password ? COLORS.ERROR : COLORS.PRIMARY_900}
                 label="Sua senha"
                 returnKeyType="next"
+                secureTextEntry
                 isRequired
                 value={values.password}
                 onChangeText={handleChange('password')}
@@ -161,19 +164,7 @@ export function SignUp() {
                   {errors.password}
                 </TextError>
               )}
-              <Input
-                placeholder="Confirme sua senha"
-                type="secondary"
-                borderColor={errors.password_confirmation && touched.password_confirmation ? COLORS.ERROR : COLORS.PRIMARY_900}
-                label="Confirmar senha"
-                isRequired
-                onChangeText={handleChange('password_confirmation')}
-                value={values.password_confirmation} />
-              {errors.password_confirmation && touched.password_confirmation && (
-                <TextError>
-                  {errors.password_confirmation}
-                </TextError>
-              )}
+              
             <ButtonIcon
                 type="primary"
                 title="Confirmar e continuar"
