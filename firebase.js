@@ -7,12 +7,12 @@ import 'firebase/database'
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD4J0TNil9RnNdJZP7hm1klkmpxvPB4VnU",
-  authDomain: "tcc-my-aquarium.firebaseapp.com",
-  projectId: "tcc-my-aquarium",
-  storageBucket: "tcc-my-aquarium.appspot.com",
-  messagingSenderId: "618496519257",
-  appId: "1:618496519257:web:e5df84327fbe18e5f75548",
+  apiKey: "AIzaSyCQYUjAQWa_9JKoDWitK6DgmxuEZ6sX-7w",
+  authDomain: "tcc-my-aquarium-d9817.firebaseapp.com",
+  projectId: "tcc-my-aquarium-d9817",
+  storageBucket: "tcc-my-aquarium-d9817.appspot.com",
+  messagingSenderId: "579078132327",
+  appId: "1:579078132327:web:4a80b886cffc1d064f7ac2"
 };
 
 // Initialize Firebase

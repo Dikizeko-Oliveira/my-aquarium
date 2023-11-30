@@ -102,7 +102,7 @@ export function Home() {
   async function handleTurnOnTheLights() {
     try {
       setLoading(true)
-      const lightRef = doc(collection(firestore, "actions"), "4Eau9nRbMibTuSM6IDof");
+      const lightRef = doc(collection(firestore, "actions"), "pKQPULkAlwym7t0GCJMF");
     
       await updateDoc(lightRef, {
         light: lightOn ? 'off' : 'on'
@@ -116,7 +116,7 @@ export function Home() {
   async function handleTurnOnTheFeeder() {
     try {
       setLoading(true)
-      const feederRef = doc(collection(firestore, "actions"), "4Eau9nRbMibTuSM6IDof");
+      const feederRef = doc(collection(firestore, "actions"), "pKQPULkAlwym7t0GCJMF");
     
       await updateDoc(feederRef, {
         feeder: feederOn ? 'off' : 'on'
